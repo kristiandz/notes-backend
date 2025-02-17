@@ -29,12 +29,20 @@ dependencies {
 
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	runtimeOnly 'org.postgresql:postgresql'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	testImplementation 'org.mockito:mockito-core:4.0.0'
+	testImplementation 'org.mockito:mockito-junit-jupiter:4.0.0'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+	testLogging {
+		events 'PASSED', 'FAILED', 'SKIPPED'
+	}
 }
