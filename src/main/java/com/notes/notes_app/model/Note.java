@@ -17,7 +17,7 @@ public class Note {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "VARCHAR(255) DEFAULT 'Untitled note'")
     private String title;
 
     @Column(columnDefinition = "TEXT")
