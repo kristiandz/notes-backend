@@ -1,11 +1,14 @@
 package com.notes.notes_app.model;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
 import java.util.List;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NoteDTO {
     private Long id;
     private String title;
