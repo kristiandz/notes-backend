@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -32,8 +33,8 @@ public class Note {
             joinColumns = @JoinColumn(name = "note_id"),
             inverseJoinColumns = @JoinColumn(name = "category_id")
     )
-    private List<Category> categories;
+    private List<Category> categories = new ArrayList<>();;
 
     @OneToMany(mappedBy = "note", cascade = CascadeType.ALL)
-    private List<Attachment> attachments;
+    private List<Attachment> attachments = new ArrayList<>();;
 }
