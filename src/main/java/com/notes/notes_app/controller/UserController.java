@@ -14,17 +14,12 @@ public class UserController {
     private UserService userService;
 
     @GetMapping("/{username}")
-    public ResponseEntity<Optional<User>> findByUsername(@PathVariable String username) {
+    public ResponseEntity<User> findByUsername(@PathVariable String username) {
         return ResponseEntity.ok(userService.findByUsername(username));
     }
 
     @GetMapping("/id/{id}")
     public ResponseEntity<Optional<User>> findById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.findById(id));
-    }
-
-    @PostMapping
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        return ResponseEntity.ok(userService.createUser(user));
     }
 }
