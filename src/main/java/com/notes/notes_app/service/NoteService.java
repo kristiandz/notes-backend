@@ -89,7 +89,7 @@ public class NoteService {
 
     public NoteDTO getNoteById(Long id) {
         Note note = noteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Note not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Note not found for id: " + id));
         return convertToDTO(note);
     }
 }
