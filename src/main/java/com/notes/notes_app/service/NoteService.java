@@ -1,16 +1,16 @@
 package com.notes.notes_app.service;
 
 import com.notes.notes_app.errorHandle.ResourceNotFoundException;
-import com.notes.notes_app.model.Category;
-import com.notes.notes_app.model.Note;
-import com.notes.notes_app.model.NoteDTO;
-import com.notes.notes_app.model.User;
+import com.notes.notes_app.model.*;
 import com.notes.notes_app.repository.AttachmentRepository;
 import com.notes.notes_app.repository.CategoryRepository;
 import com.notes.notes_app.repository.NoteRepository;
 import com.notes.notes_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,7 +21,7 @@ public class NoteService {
     @Autowired private CategoryRepository categoryRepository;
     @Autowired private AttachmentRepository attachmentRepository;
 
-    public Note createNote(NoteDTO noteDTO) {
+    public Note createNote(NoteDTO noteDTO, List<Attachment> files) {
         if (noteDTO.getId() != null) {
             throw new IllegalArgumentException("ID must be null when creating a new note");
         }
@@ -37,6 +37,13 @@ public class NoteService {
         note.setTitle(noteDTO.getTitle());
         note.setContent(noteDTO.getContent());
         note.setUser(user);
+
+        // Attachments need to be set separately
+        for (Attachment attachment : files) {
+            attachment.setNote(note);
+        }
+
+        note.setAttachments(files);
         return noteRepository.save(note);
     }
 
@@ -83,7 +90,8 @@ public class NoteService {
                 note.getTitle(),
                 note.getContent(),
                 note.getUser().getId(),
-                note.getCategories().stream().map(Category::getId).collect(Collectors.toList())
+                note.getCategories().stream().map(Category::getId).collect(Collectors.toList()),
+                note.getAttachments()
         );
     }
 

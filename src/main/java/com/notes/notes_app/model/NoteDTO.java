@@ -15,4 +15,5 @@ public class NoteDTO {
     private String content;
     private Long userId;
     private List<Long> categoryIds;
+    private List<Attachment> attachments;
 }

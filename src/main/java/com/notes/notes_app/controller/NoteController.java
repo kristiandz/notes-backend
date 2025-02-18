@@ -1,11 +1,20 @@
 package com.notes.notes_app.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.notes.notes_app.model.Attachment;
+import com.notes.notes_app.model.Category;
 import com.notes.notes_app.model.Note;
 import com.notes.notes_app.model.NoteDTO;
+import com.notes.notes_app.service.AttachmentService;
 import com.notes.notes_app.service.NoteService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,11 +24,37 @@ import java.util.Map;
 public class NoteController {
     @Autowired
     private NoteService noteService;
+    @Autowired
+    private AttachmentService attachmentService;
 
-    @PostMapping
-    public ResponseEntity<NoteDTO> createNote(@RequestBody NoteDTO requestDTO) {
-        Note note = noteService.createNote(requestDTO);
-        NoteDTO responseDTO = noteService.getNoteById(note.getId());
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<NoteDTO> createNote(@RequestPart("note") String noteJson,
+                                              @RequestPart(value="attachments", required = false) List<MultipartFile> files) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        NoteDTO requestDTO;
+
+        try {
+            requestDTO = objectMapper.readValue(noteJson, NoteDTO.class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Invalid note JSON format", e);
+        }
+
+        List<MultipartFile> multipartFiles = (files != null) ? files : new ArrayList<>();
+        List<Attachment> attachments = multipartFiles.stream().map(file -> {
+            try {
+                return new Attachment(null, file.getOriginalFilename(), file.getContentType(), file.getBytes(), null);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to process file: " + file.getOriginalFilename());
+            }
+        }).toList();
+
+        requestDTO.setAttachments(attachments);
+        Note note = noteService.createNote(requestDTO, attachments);
+        NoteDTO responseDTO = new NoteDTO(
+                note.getId(), note.getTitle(), note.getContent(),
+                note.getUser().getId(), note.getCategories().stream().map(Category::getId).toList(),
+                note.getAttachments());
         return ResponseEntity.ok(responseDTO);
     }
 
