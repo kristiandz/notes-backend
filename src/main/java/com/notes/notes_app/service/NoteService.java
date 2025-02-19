@@ -2,15 +2,11 @@ package com.notes.notes_app.service;
 
 import com.notes.notes_app.errorHandle.ResourceNotFoundException;
 import com.notes.notes_app.model.*;
-import com.notes.notes_app.repository.AttachmentRepository;
 import com.notes.notes_app.repository.CategoryRepository;
 import com.notes.notes_app.repository.NoteRepository;
 import com.notes.notes_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,7 +15,8 @@ public class NoteService {
     @Autowired private NoteRepository noteRepository;
     @Autowired private UserRepository userRepository;
     @Autowired private CategoryRepository categoryRepository;
-    @Autowired private AttachmentRepository attachmentRepository;
+    @Autowired private AttachmentService attachmentService;
+
 
     public Note createNote(NoteDTO noteDTO, List<Attachment> files) {
         if (noteDTO.getId() != null) {
@@ -37,14 +34,13 @@ public class NoteService {
         note.setTitle(noteDTO.getTitle());
         note.setContent(noteDTO.getContent());
         note.setUser(user);
-
-        // Attachments need to be set separately
+        note = noteRepository.save(note);
         for (Attachment attachment : files) {
             attachment.setNote(note);
+            attachmentService.saveAttachment(attachment);
         }
-
-        note.setAttachments(files);
-        return noteRepository.save(note);
+        note.setAttachments(attachmentService.getFilesByNoteId(note.getId()));
+        return note;
     }
 
     public NoteDTO updateNote(Long id, NoteDTO noteDTO) {
@@ -73,8 +69,16 @@ public class NoteService {
         return convertToDTO(updatedNote);
     }
 
-    public List<Note> getNotesByUser(Long userId) {
-        return noteRepository.findByUserId(userId);
+    public List<NoteDTO> getNotesByUser(Long userId) {
+        List<Note> notes = noteRepository.findByUserId(userId);
+        return notes.stream().map(note -> new NoteDTO(
+                note.getId(),
+                note.getTitle(),
+                note.getContent(),
+                note.getUser().getId(),
+                note.getCategories().stream().map(Category::getId).toList(),
+                attachmentService.getAttachmentMetadataByNoteId(note.getId())
+        )).toList();
     }
 
     public void deleteNote(Long id) {
@@ -91,7 +95,14 @@ public class NoteService {
                 note.getContent(),
                 note.getUser().getId(),
                 note.getCategories().stream().map(Category::getId).collect(Collectors.toList()),
-                note.getAttachments()
+                note.getAttachments().stream()
+                        .map(attachment -> new AttachmentDTO(
+                                attachment.getId(),
+                                attachment.getFileName(),
+                                attachment.getFileType(),
+                                "/attachments/" +attachment.getId()
+                        ))
+                        .collect(Collectors.toList())
         );
     }
 

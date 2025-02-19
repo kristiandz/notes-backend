@@ -2,10 +2,7 @@ package com.notes.notes_app.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.notes.notes_app.model.Attachment;
-import com.notes.notes_app.model.Category;
-import com.notes.notes_app.model.Note;
-import com.notes.notes_app.model.NoteDTO;
+import com.notes.notes_app.model.*;
 import com.notes.notes_app.service.AttachmentService;
 import com.notes.notes_app.service.NoteService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,12 +46,21 @@ public class NoteController {
             }
         }).toList();
 
-        requestDTO.setAttachments(attachments);
         Note note = noteService.createNote(requestDTO, attachments);
+
+        List<AttachmentDTO> attachmentDTO = note.getAttachments().stream()
+                .map(attachment -> new AttachmentDTO(
+                        attachment.getId(),
+                        attachment.getFileName(),
+                        attachment.getFileType(),
+                        "/attachments/" + attachment.getId()
+                ))
+                .toList();
+
         NoteDTO responseDTO = new NoteDTO(
                 note.getId(), note.getTitle(), note.getContent(),
                 note.getUser().getId(), note.getCategories().stream().map(Category::getId).toList(),
-                note.getAttachments());
+                attachmentDTO);
         return ResponseEntity.ok(responseDTO);
     }
 
@@ -65,7 +71,7 @@ public class NoteController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Note>> getNotesByUser(@PathVariable Long userId) {
+    public ResponseEntity<List<NoteDTO>> getNotesByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(noteService.getNotesByUser(userId));
     }
 
