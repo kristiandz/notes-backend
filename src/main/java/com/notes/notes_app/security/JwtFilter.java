@@ -45,6 +45,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 }
             }
         }
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT, PATCH, HEAD, OPTIONS");
+        response.addHeader("Access-Control-Allow-Headers", "Authorization, Origin, Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers, Access-Control-Allow-Headers");
+        response.addHeader("Access-Control-Expose-Headers", "Access-Control-Allow-Origin, Access-Control-Allow-Credentials");
+        response.addHeader("Access-Control-Allow-Credentials", "true");
         filterChain.doFilter(request, response);
     }
 }
