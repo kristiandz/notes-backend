@@ -23,7 +23,9 @@ public class Attachment {
     private String fileType;
 
     @Lob
+    @Basic(fetch = FetchType.LAZY)
     @Column(nullable = false)
+    @JsonIgnore
     private byte[] data;
 
     @JsonIgnore
