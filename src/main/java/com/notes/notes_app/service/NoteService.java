@@ -7,6 +7,8 @@ import com.notes.notes_app.repository.NoteRepository;
 import com.notes.notes_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -17,7 +19,7 @@ public class NoteService {
     @Autowired private CategoryRepository categoryRepository;
     @Autowired private AttachmentService attachmentService;
 
-
+    @Transactional
     public Note createNote(NoteDTO noteDTO, List<Attachment> files) {
         if (noteDTO.getId() != null) {
             throw new IllegalArgumentException("ID must be null when creating a new note");
@@ -43,6 +45,7 @@ public class NoteService {
         return note;
     }
 
+    @Transactional
     public NoteDTO updateNote(Long id, NoteDTO noteDTO) {
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
@@ -70,15 +73,9 @@ public class NoteService {
     }
 
     public List<NoteDTO> getNotesByUser(Long userId) {
-        List<Note> notes = noteRepository.findByUserId(userId);
-        return notes.stream().map(note -> new NoteDTO(
-                note.getId(),
-                note.getTitle(),
-                note.getContent(),
-                note.getUser().getId(),
-                note.getCategories().stream().map(Category::getId).toList(),
-                attachmentService.getAttachmentMetadataByNoteId(note.getId())
-        )).toList();
+        return noteRepository.findByUserId(userId).stream()
+                .map(this::convertToDTO)
+                .toList();
     }
 
     public void deleteNote(Long id) {
@@ -86,24 +83,23 @@ public class NoteService {
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
         noteRepository.delete(note);
     }
-
-    // Helper DTO methods
+    
     private NoteDTO convertToDTO(Note note) {
-        return new NoteDTO(
-                note.getId(),
-                note.getTitle(),
-                note.getContent(),
-                note.getUser().getId(),
-                note.getCategories().stream().map(Category::getId).collect(Collectors.toList()),
-                note.getAttachments().stream()
+        return NoteDTO.builder()
+                .id(note.getId())
+                .title(note.getTitle())
+                .content(note.getContent())
+                .createdAt(note.getCreatedAt())
+                .userId(note.getUser().getId())
+                .categoryIds(note.getCategories().stream().map(Category::getId).toList())
+                .attachments(attachmentService.getAttachmentMetadataByNoteId(note.getId()).stream()
                         .map(attachment -> new AttachmentDTO(
                                 attachment.getId(),
                                 attachment.getFileName(),
                                 attachment.getFileType(),
-                                "/attachments/" +attachment.getId()
-                        ))
-                        .collect(Collectors.toList())
-        );
+                                "/attachments/" + attachment.getId()))
+                        .toList())
+                .build();
     }
 
     public NoteDTO getNoteById(Long id) {

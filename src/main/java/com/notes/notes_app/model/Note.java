@@ -1,6 +1,6 @@
 package com.notes.notes_app.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.time.LocalDateTime;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -24,6 +24,9 @@ public class Note {
     @Column(columnDefinition = "TEXT")
     private String content;
 
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -38,4 +41,9 @@ public class Note {
 
     @OneToMany(mappedBy = "note", cascade = CascadeType.ALL)
     private List<Attachment> attachments = new ArrayList<>();;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

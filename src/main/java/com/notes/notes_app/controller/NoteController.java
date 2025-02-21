@@ -58,7 +58,7 @@ public class NoteController {
                 .toList();
 
         NoteDTO responseDTO = new NoteDTO(
-                note.getId(), note.getTitle(), note.getContent(),
+                note.getId(), note.getTitle(), note.getContent(), note.getCreatedAt(),
                 note.getUser().getId(), note.getCategories().stream().map(Category::getId).toList(),
                 attachmentDTO);
         return ResponseEntity.ok(responseDTO);
