@@ -59,7 +59,7 @@ public class NoteController {
 
         NoteDTO responseDTO = new NoteDTO(
                 note.getId(), note.getTitle(), note.getContent(), note.getCreatedAt(),
-                note.getUser().getId(), note.getCategories().stream().map(Category::getId).toList(),
+                note.getUser().getId(), note.getCategories(),
                 attachmentDTO);
         return ResponseEntity.ok(responseDTO);
     }

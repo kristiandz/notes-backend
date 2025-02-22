@@ -15,6 +15,6 @@ public class NoteDTO {
     private String content;
     private LocalDateTime createdAt;
     private Long userId;
-    private List<Long> categoryIds;
+    private List<Category> categories;
     private List<AttachmentDTO> attachments;
 }

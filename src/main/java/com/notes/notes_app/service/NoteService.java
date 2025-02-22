@@ -8,9 +8,7 @@ import com.notes.notes_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class NoteService {
@@ -27,8 +25,8 @@ public class NoteService {
         User user = userRepository.findById(noteDTO.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + noteDTO.getUserId()));
 
-        List<Category> categories = categoryRepository.findAllById(noteDTO.getCategoryIds());
-        if (categories.size() != noteDTO.getCategoryIds().size()) {
+        List<Category> categories = categoryRepository.findAllById(noteDTO.getCategories().stream().map(Category::getId).toList());
+        if (categories.size() != noteDTO.getCategories().stream().map(Category::getId).toList().size()) {
             throw new ResourceNotFoundException("One or more categories not found.");
         }
         Note note = new Note();
@@ -55,8 +53,8 @@ public class NoteService {
                     .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + noteDTO.getUserId()));
             note.setUser(user);
         }
-        if(noteDTO.getCategoryIds() != null) {
-            List<Category> categories = categoryRepository.findAllById(noteDTO.getCategoryIds());
+        if(noteDTO.getCategories() != null) {
+            List<Category> categories = categoryRepository.findAllById(noteDTO.getCategories().stream().map(Category::getId).toList());
             if (categories.isEmpty()) {
                 throw new ResourceNotFoundException("One or more categories not found");
             }
@@ -83,7 +81,7 @@ public class NoteService {
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
         noteRepository.delete(note);
     }
-    
+
     private NoteDTO convertToDTO(Note note) {
         return NoteDTO.builder()
                 .id(note.getId())
@@ -91,7 +89,7 @@ public class NoteService {
                 .content(note.getContent())
                 .createdAt(note.getCreatedAt())
                 .userId(note.getUser().getId())
-                .categoryIds(note.getCategories().stream().map(Category::getId).toList())
+                .categories(note.getCategories())
                 .attachments(attachmentService.getAttachmentMetadataByNoteId(note.getId()).stream()
                         .map(attachment -> new AttachmentDTO(
                                 attachment.getId(),
