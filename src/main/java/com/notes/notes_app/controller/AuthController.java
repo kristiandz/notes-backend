@@ -5,8 +5,12 @@ import com.notes.notes_app.model.User;
 import com.notes.notes_app.security.JwtUtility;
 import com.notes.notes_app.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -28,7 +32,12 @@ public class AuthController {
 
     // Add the token in return so the FE can save the jwt on login
     @PostMapping("/register")
-    public String register(@RequestBody User request) {
-        return userService.createUser(request);
+    public ResponseEntity<Map<String, String>> register(@RequestBody User request) {
+        String responseMessage = userService.createUser(request);
+        String token = jwtUtility.generateToken(request.getUsername());
+        Map<String, String> response = new HashMap<>();
+        response.put("message", responseMessage);
+        response.put("token", token);
+        return ResponseEntity.ok(response);
     }
 }
