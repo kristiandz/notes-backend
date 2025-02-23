@@ -38,15 +38,7 @@ public class NoteController {
         }
 
         List<MultipartFile> multipartFiles = (files != null) ? files : new ArrayList<>();
-        List<Attachment> attachments = multipartFiles.stream().map(file -> {
-            try {
-                return new Attachment(null, file.getOriginalFilename(), file.getContentType(), file.getBytes(), null);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to process file: " + file.getOriginalFilename());
-            }
-        }).toList();
-
-        Note note = noteService.createNote(requestDTO, attachments);
+        Note note = noteService.createNote(requestDTO, multipartFiles);
 
         List<AttachmentDTO> attachmentDTO = note.getAttachments().stream()
                 .map(attachment -> new AttachmentDTO(
@@ -70,15 +62,34 @@ public class NoteController {
         return ResponseEntity.ok(noteDTO);
     }
 
-    @GetMapping("/user/{userId}")
+    @GetMapping("/user/id/{userId}")
     public ResponseEntity<List<NoteDTO>> getNotesByUser(@PathVariable Long userId) {
         return ResponseEntity.ok(noteService.getNotesByUser(userId));
     }
 
+    @GetMapping("/user/{username}")
+    public List<NoteDTO> getNotesByUser(@PathVariable String username) {
+        return noteService.getNotesByUsername(username);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<NoteDTO> updateNote(@PathVariable Long id, @RequestBody NoteDTO noteDTO) {
-        NoteDTO updatedNote = noteService.updateNote(id, noteDTO);
-        return ResponseEntity.ok(updatedNote);
+    public ResponseEntity<NoteDTO> updateNote(
+            @PathVariable Long id,
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "content", required = false) String content,
+            @RequestParam(value = "categories[]", required = false) List<Long> categoryIds,
+            @RequestParam(value = "attachments[]", required = false) List<MultipartFile> attachments,
+            @RequestParam(value = "attachmentIds[]", required = false) List<Long> attachmentIds) {
+
+        System.out.println("New Attachments: " + (attachments != null ? attachments.size() : "None"));
+
+        try {
+            noteService.handleAttachmentsForNote(id, attachments, attachmentIds);
+        } catch (IOException e) {
+            return ResponseEntity.status(500).body(null);
+        }
+        NoteDTO updatedNoteDTO = noteService.updateNote(id, title, content, categoryIds);
+        return ResponseEntity.ok(updatedNoteDTO);
     }
 
     @DeleteMapping("/{id}")

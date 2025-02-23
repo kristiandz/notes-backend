@@ -8,7 +8,10 @@ import com.notes.notes_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class NoteService {
@@ -18,7 +21,7 @@ public class NoteService {
     @Autowired private AttachmentService attachmentService;
 
     @Transactional
-    public Note createNote(NoteDTO noteDTO, List<Attachment> files) {
+    public Note createNote(NoteDTO noteDTO, List<MultipartFile > files) {
         if (noteDTO.getId() != null) {
             throw new IllegalArgumentException("ID must be null when creating a new note");
         }
@@ -35,36 +38,37 @@ public class NoteService {
         note.setContent(noteDTO.getContent());
         note.setUser(user);
         note = noteRepository.save(note);
-        for (Attachment attachment : files) {
-            attachment.setNote(note);
-            attachmentService.saveAttachment(attachment);
+
+        for (MultipartFile file : files) {
+            try {
+                attachmentService.saveAttachment(file, note.getId()); // Passing noteId for the relationship
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to save attachment", e);
+            }
         }
         note.setAttachments(attachmentService.getFilesByNoteId(note.getId()));
         return note;
     }
 
     @Transactional
-    public NoteDTO updateNote(Long id, NoteDTO noteDTO) {
+    public NoteDTO updateNote(Long id, String title, String content, List<Long> categoryIds) {
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found with id: " + id));
 
-        if(noteDTO.getUserId() != null) {
-            User user = userRepository.findById(noteDTO.getUserId())
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + noteDTO.getUserId()));
-            note.setUser(user);
-        }
-        if(noteDTO.getCategories() != null) {
-            List<Category> categories = categoryRepository.findAllById(noteDTO.getCategories().stream().map(Category::getId).toList());
+        if (categoryIds != null && !categoryIds.isEmpty()) {
+            List<Category> categories = categoryRepository.findAllById(categoryIds);
             if (categories.isEmpty()) {
-                throw new ResourceNotFoundException("One or more categories not found");
+                Category generalCategory = categoryRepository.findByName("General")
+                        .orElseThrow(() -> new ResourceNotFoundException("General category not found. Ensure it's created."));
+                categories.add(generalCategory);
             }
             note.setCategories(categories);
         }
-        if(noteDTO.getTitle() != null) {
-            note.setTitle(noteDTO.getTitle());
+        if (title != null) {
+            note.setTitle(title);
         }
-        if(noteDTO.getContent() != null) {
-            note.setContent(noteDTO.getContent());
+        if (content != null) {
+            note.setContent(content);
         }
         Note updatedNote = noteRepository.save(note);
         return convertToDTO(updatedNote);
@@ -104,5 +108,29 @@ public class NoteService {
         Note note = noteRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Note not found for id: " + id));
         return convertToDTO(note);
+    }
+
+    @Transactional
+    public void handleAttachmentsForNote(Long noteId, List<MultipartFile> attachments, List<Long> attachmentIds) throws IOException {
+        if (attachments != null && !attachments.isEmpty()) {
+            for (MultipartFile file : attachments) {
+                attachmentService.saveAttachment(file, noteId);
+            }
+        }
+        if (attachmentIds != null && !attachmentIds.isEmpty()) {
+            for (Long attachmentId : attachmentIds) {
+                attachmentService.reassociateAttachmentToNote(attachmentId, noteId);
+            }
+        }
+    }
+
+    public List<NoteDTO> getNotesByUsername(String username) {
+        List<Note> notes = noteRepository.findByUserUsername(username);
+        if (notes.isEmpty()) {
+            throw new ResourceNotFoundException("No notes found for user: " + username);
+        }
+        return notes.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
     }
 }
