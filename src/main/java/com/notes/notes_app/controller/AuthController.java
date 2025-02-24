@@ -20,24 +20,27 @@ public class AuthController {
     @Autowired private BCryptPasswordEncoder passwordEncoder;
     @Autowired private UserService userService;
 
-    // Move the business logic to AuthService
     @PostMapping("/login")
-    public String login(@RequestBody User request) {
+    public ResponseEntity<Map<String, Object>> login(@RequestBody User request) {
         User user = userService.findByUsername(request.getUsername());
         if (!passwordEncoder.matches(request.getPassword(),user.getPassword())) {
             throw new InvalidCredentialsException("Invalid credentials");
         }
-        return jwtUtility.generateToken(request.getUsername());
+        String token = jwtUtility.generateToken(request.getUsername());
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("userId", user.getId());
+        return ResponseEntity.ok(response);
     }
 
-    // Add the token in return so the FE can save the jwt on login
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> register(@RequestBody User request) {
-        String responseMessage = userService.createUser(request);
+    public ResponseEntity<Map<String, Object>> register(@RequestBody User request) {
+        User createdUser = userService.createUser(request);
         String token = jwtUtility.generateToken(request.getUsername());
-        Map<String, String> response = new HashMap<>();
-        response.put("message", responseMessage);
+        Map<String, Object> response = new HashMap<>();
+        response.put("message", "User registered successfully!");
         response.put("token", token);
+        response.put("userId", createdUser.getId());
         return ResponseEntity.ok(response);
     }
 }
