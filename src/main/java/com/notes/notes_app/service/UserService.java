@@ -31,7 +31,7 @@ public class UserService implements UserDetailsService {
         return userRepository.findById(id);
     }
 
-    public String createUser(User newUser) {
+    public User createUser(User newUser) {
         if (userRepository.findByUsername(newUser.getUsername()).isPresent()) {
             throw new RequestRejectedException("Username already exists");
         }
@@ -39,7 +39,7 @@ public class UserService implements UserDetailsService {
         user.setUsername(newUser.getUsername());
         user.setPassword(passwordEncoder.encode(newUser.getPassword()));
         userRepository.save(user);
-        return "User registered successfully!";
+        return user;
     }
 
     @Override
