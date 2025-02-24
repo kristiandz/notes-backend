@@ -21,6 +21,6 @@ public class Category {
     private String name;
 
     @JsonIgnore
-    @ManyToMany(mappedBy = "categories")
+    @ManyToMany(mappedBy = "categories", cascade = CascadeType.REMOVE )
     private List<Note> notes;
 }
