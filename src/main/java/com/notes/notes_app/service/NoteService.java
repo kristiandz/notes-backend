@@ -28,15 +28,33 @@ public class NoteService {
         User user = userRepository.findById(noteDTO.getUserId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + noteDTO.getUserId()));
 
-        List<Category> categories = categoryRepository.findAllById(noteDTO.getCategories().stream().map(Category::getId).toList());
-        if (categories.size() != noteDTO.getCategories().stream().map(Category::getId).toList().size()) {
-            throw new ResourceNotFoundException("One or more categories not found.");
+        List<Category> categories;
+        if (noteDTO.getCategories() != null && !noteDTO.getCategories().isEmpty()) {
+            categories = categoryRepository.findAllById(noteDTO.getCategories().stream().map(Category::getId).toList());
+            for (Category category : noteDTO.getCategories()) {
+                if (!categories.stream().anyMatch(cat -> cat.getId().equals(category.getId()))) {
+                    Category newCategory = new Category();
+                    newCategory.setName(category.getName());
+                    categories.add(categoryRepository.save(newCategory));
+                }
+            }
+            if (categories.isEmpty()) {
+                Category generalCategory = categoryRepository.findByName("General")
+                        .orElseThrow(() -> new ResourceNotFoundException("General category not found. Ensure it's created."));
+                categories.add(generalCategory);
+            }
+        } else {
+            Category generalCategory = categoryRepository.findByName("General")
+                    .orElseThrow(() -> new ResourceNotFoundException("General category not found. Ensure it's created."));
+            categories = List.of(generalCategory);
         }
+
         Note note = new Note();
         note.setCategories(categories);
         note.setTitle(noteDTO.getTitle());
         note.setContent(noteDTO.getContent());
         note.setUser(user);
+        note.setId(null);
         note = noteRepository.save(note);
 
         for (MultipartFile file : files) {

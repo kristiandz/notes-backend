@@ -27,19 +27,15 @@ public class NoteController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<NoteDTO> createNote(@RequestPart("note") String noteJson,
                                               @RequestPart(value="attachments", required = false) List<MultipartFile> files) {
-
         ObjectMapper objectMapper = new ObjectMapper();
         NoteDTO requestDTO;
-
         try {
             requestDTO = objectMapper.readValue(noteJson, NoteDTO.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Invalid note JSON format", e);
         }
-
         List<MultipartFile> multipartFiles = (files != null) ? files : new ArrayList<>();
         Note note = noteService.createNote(requestDTO, multipartFiles);
-
         List<AttachmentDTO> attachmentDTO = note.getAttachments().stream()
                 .map(attachment -> new AttachmentDTO(
                         attachment.getId(),
@@ -48,7 +44,6 @@ public class NoteController {
                         "/attachments/" + attachment.getId()
                 ))
                 .toList();
-
         NoteDTO responseDTO = new NoteDTO(
                 note.getId(), note.getTitle(), note.getContent(), note.getCreatedAt(),
                 note.getUser().getId(), note.getCategories(),
